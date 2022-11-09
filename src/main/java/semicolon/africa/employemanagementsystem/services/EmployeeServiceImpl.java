@@ -4,25 +4,24 @@ import lombok.AllArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import semicolon.africa.employemanagementsystem.data.model.Employee;
-import semicolon.africa.employemanagementsystem.data.repository.EmployeRepository;
-import semicolon.africa.employemanagementsystem.dto.request.DeleteRequest;
-import semicolon.africa.employemanagementsystem.dto.request.EmployeeRequest;
-import semicolon.africa.employemanagementsystem.dto.request.LoginRequest;
-import semicolon.africa.employemanagementsystem.dto.request.RegisterEmployeeRequest;
+import semicolon.africa.employemanagementsystem.data.repository.EmployeeRepository;
+import semicolon.africa.employemanagementsystem.dto.request.*;
 import semicolon.africa.employemanagementsystem.dto.response.DeleteResponse;
 import semicolon.africa.employemanagementsystem.dto.response.EmployeeResponse;
 import semicolon.africa.employemanagementsystem.dto.response.LoginResponse;
+import semicolon.africa.employemanagementsystem.dto.response.UpdateResponse;
 import semicolon.africa.employemanagementsystem.exceptions.DuplicateEmailException;
 import semicolon.africa.employemanagementsystem.exceptions.InvalidDetailsException;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 
 
 @Service
 @AllArgsConstructor
 
 public class EmployeeServiceImpl implements EmployeeService {
-    private EmployeRepository employeRepository;
+    private EmployeeRepository employeeRepository;
 
     @Override
     public EmployeeResponse registerEmployee(RegisterEmployeeRequest request) throws DuplicateEmailException {
@@ -31,8 +30,8 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
         Employee employee = new Employee();
         ModelMapper modelMapper = new ModelMapper();
-        modelMapper.map(request,Employee.class);
-        Employee savedEmployee = employeRepository.save(employee);
+        employee = modelMapper.map(request,Employee.class);
+        Employee savedEmployee = employeeRepository.save(employee);
         EmployeeResponse response = new EmployeeResponse();
         response.setEmail(savedEmployee.getEmail());
         response.setDateCreated(DateTimeFormatter.ofPattern("EEEE, dd/MM/yyy, hh:mm, a").format(savedEmployee.getDateRegistered()));
@@ -40,15 +39,18 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     }
 
-    private Boolean FindByMail(String existByMail) {
-        Employee employee = employeRepository.existsByEmail(existByMail);
-        return employee != null;
+    private boolean FindByMail(String existByMail) {
+        Optional<Employee> employee = employeeRepository.findByEmail(existByMail);
+        return employee.isPresent();
     }
 
     @Override
     public DeleteResponse deleteEmployee(DeleteRequest request) {
-        Employee employee = employeRepository.existsByEmail(request.getEmployeeId());
-        employeRepository.delete(employee);
+        Optional<Employee> employee = employeeRepository.findByEmail(request.getEmployeeId());
+        if (employee.isEmpty()){
+            throw new IllegalStateException("Cant Find Employee");
+        }
+        employeeRepository.delete(employee.get());
         DeleteResponse deleteResponse = new DeleteResponse();
         deleteResponse.setMessage("Employee deleted");
         deleteResponse.setEmail(request.getEmail());
@@ -56,36 +58,54 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
-    public EmployeeResponse updateEmployee(RegisterEmployeeRequest request) {
-        Employee employee = employeRepository.existsByEmail(request.getEmail());
+    public UpdateResponse updateEmployee(UpdateRequest request) {
+        Optional<Employee> employee = employeeRepository.findByEmail(request.getEmail());
+        if (employee.isEmpty()) {
+            throw new IllegalStateException("user not found");
+        }
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.map(request,Employee.class);
-        employeRepository.save(employee);
-        EmployeeResponse response = new EmployeeResponse();
-        response.setEmail(request.getEmail());
-        response.setMessage("employee successfully updated");
+
+        employeeRepository.save(employee.get());
+        UpdateResponse response = new UpdateResponse();
+
+
+        response.setPassword(request.getPassword());
+
+        response.setFirstName(request.getFirstName());
+        response.setLastName(request.getLastName());
+        response.setPhoneNumber(request.getPhoneNumber());
+        response.setMessage("updated successfully");
         return response;
     }
 
     @Override
     public Employee findById(EmployeeRequest request) {
-        Employee employee = employeRepository.findByEmployeeId(request.getEmployeeId());
-        if (employee.getEmployeeId().equals(request.getEmployeeId())) {
-            return employee;
+        Optional<Employee> employee = employeeRepository.findById(request.getId());
+        if (employee.get().getId().equals(request.getId())) {
+            return employee.get();
         }
-        return null;
+        throw new IllegalStateException("cant find employee");
     }
 
     @Override
     public LoginResponse loginEmployee(LoginRequest loginRequest) throws InvalidDetailsException {
-        Employee employee = employeRepository.existsByEmail(loginRequest.getEmail());
-        LoginResponse response = new LoginResponse();
-        if (employee.getPassword().equals(loginRequest.getPassword())) {
-            response.setMessage("Logged in successfully");
-            return response;
+        Optional<Employee> employee = employeeRepository.findByEmail(loginRequest.getEmail());
+        if (employee.isPresent()){
+            if (employee.get().getPassword().equals(loginRequest.getPassword())) {
+                LoginResponse response = new LoginResponse();
+                response.setMessage("Logged in successfully");
+                return response;
         }
-        throw new InvalidDetailsException("Invalid login details");
+            throw new InvalidDetailsException("Invalid login details");
+        }
 
+    throw new InvalidDetailsException("cant find Employee");
+    }
+
+    @Override
+    public Employee findByMail(EmployeeRequest request) {
+        return null;
     }
 
 

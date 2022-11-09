@@ -4,11 +4,14 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import semicolon.africa.employemanagementsystem.data.model.Employee;
 
-@Repository
-public interface EmployeRepository extends JpaRepository<Employee, Long> {
-    Employee existsByEmail(String email);
+import java.util.Optional;
 
-    Employee findByEmployeeId(String employeeId);
+@Repository
+public interface EmployeeRepository extends JpaRepository<Employee, Long> {
+   Optional <Employee> findByEmail(String email);
+
+    Optional<Employee> findById(Long id);
+
 
 
 }

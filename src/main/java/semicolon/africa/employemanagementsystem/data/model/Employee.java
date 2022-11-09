@@ -3,7 +3,6 @@ package semicolon.africa.employemanagementsystem.data.model;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
 import lombok.*;
-import org.springframework.data.annotation.Id;
 
 
 import javax.persistence.*;
@@ -18,6 +17,10 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Employee {
+    @Id
+    @Column( nullable = false)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    private Long id;
 
     private String firstName;
 
@@ -29,7 +32,7 @@ public class Employee {
     private String address;
     @Enumerated(EnumType.STRING)
     private Gender gender;
-    private String salary;
+
     //private Qualification qualification;
 
     private String phoneNumber;
@@ -37,19 +40,15 @@ public class Employee {
     private Department department;
     @Enumerated(EnumType.STRING)
     private JobLevel jobLevel;
-    private BigDecimal employeeSalary;
 
 
-    private Boolean isSuspended;
+
+    private Boolean isSuspended = false;
     @OneToMany(cascade = CascadeType.ALL)
     private List<SchoolQualification> schoolQualifications;
-    @javax.persistence.Id
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Setter(AccessLevel.NONE)
-    private long id;
+
     private int age;
-    private String employeeId;
+
     private LocalDateTime dateRegistered = LocalDateTime.now();
 
 //    @JsonDeserialize(using = LocalDateDeserializer.class)
